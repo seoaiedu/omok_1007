@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>15x15 명품 오목 (Omok Master)</title>
+  <style>
+    :root {
+      --bg-color: #1a1a24;
+      --card-bg: #262738;
+      --card-border: #3d3e56;
+      --accent: #e5a93c;
+      --accent-hover: #f5b94c;
+      --text-main: #f0f2f5;
+      --text-sub: #a0a5b5;
+      --danger: #ef4444;
+      --success: #10b981;
+      --board-color: #dcb35c;
+      --board-border: #8c6224;
+      --grid-line: #5c3a10;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: radial-gradient(circle at 50% 20%, #2a2b3d, var(--bg-color));
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .game-container {
+      display: flex;
+      flex-direction: row;
+      gap: 28px;
+      max-width: 1200px;
+      width: 100%;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* Left / Main Board Area */
+    .board-wrapper {
+      position: relative;
+      background: linear-gradient(145deg, #e3ba63, #c99c43);
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.3), inset 0 -2px 6px rgba(0, 0, 0, 0.4);
+      border: 4px solid var(--board-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #boardCanvas {
+      display: block;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+
+    /* Side Control Panel */
+    .side-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      width: 340px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .panel-header {
+      text-align: center;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 14px;
+    }
+
+    .panel-header h1 {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: var(--accent);
+      letter-spacing: -0.5px;
+      margin-bottom: 4px;
+    }
+
+    .panel-header p {
+      font-size: 0.85rem;
+      color: var(--text-sub);
+    }
+
+    /* Turn Status Card */
+    .status-card {
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: 12px;
+      padding: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .turn-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .stone-indicator {
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.5);
+    }
+
+    .stone-black {
+      background: radial-gradient(circle at 35% 35%, #555, #111 80%);
+      border: 1px solid #444;
+    }
+
+    .stone-white {
+      background: radial-gradient(circle at 35% 35%, #ffffff, #dcdcdc 70%, #999 100%);
+      border: 1px solid #bbb;
+    }
+
+    .move-count {
+      font-size: 0.9rem;
+      color: var(--text-sub);
+      font-weight: 600;
+    }
+
+    /* Options Section */
+    .settings-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .setting-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .setting-item label {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text-sub);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    select, button {
+      font-family: inherit;
+      outline: none;
+      border-radius: 8px;
+    }
+
+    select {
+      background: #1e1f2e;
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+      padding: 10px 12px;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    select:hover {
+      border-color: var(--accent);
+    }
+
+    /* Toggle Switch */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+    }
+
+    .toggle-label {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .toggle-sub {
+      font-size: 0.75rem;
+      color: var(--text-sub);
+      font-weight: 400;
+    }
+
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 44px;
+      height: 24px;
+    }
+
+    .switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #3d3e56;
+      transition: .3s;
+      border-radius: 24px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      transition: .3s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider {
+      background-color: var(--accent);
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(20px);
+    }
+
+    /* Action Buttons */
+    .button-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 6px;
+    }
+
+    button {
+      cursor: pointer;
+      border: none;
+      padding: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
+      border-radius: 8px;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-secondary {
+      background: #34364c;
+      color: var(--text-main);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: #424560;
+    }
+
+    .btn-secondary:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: #111;
+      grid-column: span 2;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      box-shadow: 0 4px 12px rgba(229, 169, 60, 0.4);
+    }
+
+    /* Info / Tips text */
+    .rule-tip {
+      font-size: 0.78rem;
+      color: var(--text-sub);
+      background: rgba(0, 0, 0, 0.18);
+      border-left: 3px solid var(--accent);
+      padding: 8px 10px;
+      border-radius: 4px;
+      line-height: 1.4;
+    }
+
+    /* Modal / Popup */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(0, 0, 0, 0.75);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      backdrop-filter: blur(4px);
+    }
+
+    .modal-content {
+      background: var(--card-bg);
+      border: 2px solid var(--accent);
+      border-radius: 20px;
+      padding: 32px 28px;
+      text-align: center;
+      max-width: 380px;
+      width: 90%;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.8);
+      animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0.8); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .modal-title {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: var(--accent);
+      margin-bottom: 8px;
+    }
+
+    .modal-desc {
+      font-size: 1rem;
+      color: var(--text-main);
+      margin-bottom: 24px;
+    }
+
+    .modal-btn {
+      width: 100%;
+      padding: 14px;
+      font-size: 1.05rem;
+    }
+
+    @media (max-width: 900px) {
+      .game-container {
+        flex-direction: column;
+      }
+      .side-panel {
+        width: 100%;
+        max-width: 520px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="game-container">
+    <!-- Board Area -->
+    <div class="board-wrapper">
+      <canvas id="boardCanvas" width="560" height="560"></canvas>
+    </div>
+
+    <!-- Side Control Panel -->
+    <div class="side-panel">
+      <div class="panel-header">
+        <h1>15x15 오목</h1>
+        <p>Gomoku & Renju Rule Master</p>
+      </div>
+
+      <!-- Current Turn & Move Status -->
+      <div class="status-card">
+        <div class="turn-badge">
+          <div id="turnIndicator" class="stone-indicator stone-black"></div>
+          <span id="turnText">흑돌 차례 (선공)</span>
+        </div>
+        <div class="move-count" id="moveCountText">0수</div>
+      </div>
+
+      <!-- Game Options -->
+      <div class="settings-group">
+        <div class="setting-item">
+          <label for="gameMode">게임 모드</label>
+          <select id="gameMode">
+            <option value="pve-black">인공지능 대전 (내가 흑 / 선공)</option>
+            <option value="pve-white">인공지능 대전 (내가 백 / 후공)</option>
+            <option value="pvp">2인용 로컬 대전 (한 기기)</option>
+          </select>
+        </div>
+
+        <div class="setting-item" id="difficultyGroup">
+          <label for="aiDifficulty">AI 난이도</label>
+          <select id="aiDifficulty">
+            <option value="easy">초급 (입문자 추천)</option>
+            <option value="normal" selected>중급 (일반 실력)</option>
+            <option value="hard">고급 (알파베타 탐색 엔진)</option>
+          </select>
+        </div>
+
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">렌주룰 (Renju) 적용</div>
+            <div class="toggle-sub">흑돌 3·3, 4·4, 장목(6목 이상) 금수</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="renjuToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">착수 수순 번호 표시</div>
+            <div class="toggle-sub">돌 위에 착수된 번호 표시</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="showNumbersToggle">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="toggle-row">
+          <div>
+            <div class="toggle-label">사운드 효과음</div>
+            <div class="toggle-sub">착수음 및 승리 사운드</div>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="soundToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="rule-tip" id="ruleTip">
+          💡 <strong>렌주룰 활성화:</strong> 흑은 3·3, 4·4, 장목(6목 이상)이 금지되며 오직 정확히 5목이어야 승리합니다. 백은 아무 제약이 없습니다.
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="button-group">
+        <button id="undoBtn" class="btn-secondary" title="한 수 무르기">
+          ↩️ 무르기
+        </button>
+        <button id="hintBtn" class="btn-secondary" title="추천 착수 위치">
+          💡 AI 힌트
+        </button>
+        <button id="restartBtn" class="btn-primary">
+          🔄 새 게임 시작
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Over Modal -->
+  <div class="modal-overlay" id="gameOverModal">
+    <div class="modal-content">
+      <div class="modal-title" id="modalWinnerTitle">흑돌 승리! 🎉</div>
+      <div class="modal-desc" id="modalWinnerDesc">5목을 완성하여 승리하였습니다.</div>
+      <button class="btn-primary modal-btn" id="modalRestartBtn">다시 대결하기</button>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       1. Game Constants & State
+       ========================================================================== */
+    const BOARD_SIZE = 15;
+    const EMPTY = 0;
+    const BLACK = 1;
+    const WHITE = 2;
+
+    const canvas = document.getElementById('boardCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Display / layout dimensions
+    let cellSize = 34;
+    let margin = 28;
+    let boardPixelSize = margin * 2 + (BOARD_SIZE - 1) * cellSize;
+
+    // State
+    let board = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(EMPTY));
+    let moveHistory = []; // { x, y, stone }
+    let currentTurn = BLACK;
+    let isGameOver = false;
+    let winningStones = []; // Array of {x, y}
+    let hoverPos = null; // { x, y }
+    let hintPos = null; // { x, y }
+    let isAiThinking = false;
+
+    // UI Elements
+    const turnIndicator = document.getElementById('turnIndicator');
+    const turnText = document.getElementById('turnText');
+    const moveCountText = document.getElementById('moveCountText');
+    const gameModeSelect = document.getElementById('gameMode');
+    const aiDifficultySelect = document.getElementById('aiDifficulty');
+    const difficultyGroup = document.getElementById('difficultyGroup');
+    const renjuToggle = document.getElementById('renjuToggle');
+    const showNumbersToggle = document.getElementById('showNumbersToggle');
+    const soundToggle = document.getElementById('soundToggle');
+    const undoBtn = document.getElementById('undoBtn');
+    const hintBtn = document.getElementById('hintBtn');
+    const restartBtn = document.getElementById('restartBtn');
+    const ruleTip = document.getElementById('ruleTip');
+    const gameOverModal = document.getElementById('gameOverModal');
+    const modalWinnerTitle = document.getElementById('modalWinnerTitle');
+    const modalWinnerDesc = document.getElementById('modalWinnerDesc');
+    const modalRestartBtn = document.getElementById('modalRestartBtn');
+
+    /* ==========================================================================
+       2. Web Audio Synthesizer (Realistic Sound FX)
+       ========================================================================== */
+    let audioCtx = null;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      return audioCtx;
+    }
+
+    function playStoneSound() {
+      if (!soundToggle.checked) return;
+      try {
+        const actx = getAudioContext();
+        const now = actx.currentTime;
+
+        // Wooden board clack synthesis
+        const osc = actx.createOscillator();
+        const gain = actx.createGain();
+
+        // Noise buffer for snap sound
+        const bufferSize = actx.sampleRate * 0.05;
+        const buffer = actx.createBuffer(1, bufferSize, actx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (actx.sampleRate * 0.01));
+        }
+        const noise = actx.createBufferSource();
+        noise.buffer = buffer;
+
+        const noiseFilter = actx.createBiquadFilter();
+        noiseFilter.type = 'lowpass';
+        noiseFilter.frequency.setValueAtTime(1400, now);
+
+        const noiseGain = actx.createGain();
+        noiseGain.gain.setValueAtTime(0.8, now);
+        noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+
+        noise.connect(noiseFilter);
+        noiseFilter.connect(noiseGain);
+        noiseGain.connect(actx.destination);
+
+        // Body resonant tone
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(320 + Math.random() * 40, now);
+        osc.frequency.exponentialRampToValueAtTime(120, now + 0.08);
+
+        gain.gain.setValueAtTime(0.6, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+
+        osc.connect(gain);
+        gain.connect(actx.destination);
+
+        noise.start(now);
+        osc.start(now);
+        osc.stop(now + 0.09);
+      } catch (e) {}
+    }
+
+    function playWinSound() {
+      if (!soundToggle.checked) return;
+      try {
+        const actx = getAudioContext();
+        const now = actx.currentTime;
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        notes.forEach((freq, idx) => {
+          const osc = actx.createOscillator();
+          const gain = actx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, now + idx * 0.12);
+          gain.gain.setValueAtTime(0, now + idx * 0.12);
+          gain.gain.linearRampToValueAtTime(0.4, now + idx * 0.12 + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.12 + 0.4);
+          osc.connect(gain);
+          gain.connect(actx.destination);
+          osc.start(now + idx * 0.12);
+          osc.stop(now + idx * 0.12 + 0.45);
+        });
+      } catch (e) {}
+    }
+
+    /* ==========================================================================
+       3. Board Dimensions & Responsive Setup
+       ========================================================================== */
+    function resizeCanvas() {
+      const isMobile = window.innerWidth <= 600;
+      const targetSize = isMobile ? Math.min(window.innerWidth - 32, 420) : 560;
+      canvas.width = targetSize;
+      canvas.height = targetSize;
+      margin = Math.round(targetSize * 0.055);
+      cellSize = (targetSize - margin * 2) / (BOARD_SIZE - 1);
+      drawBoard();
+    }
+
+    function getCanvasCoords(gridX, gridY) {
+      return {
+        x: margin + gridX * cellSize,
+        y: margin + gridY * cellSize
+      };
+    }
+
+    function getGridCoords(canvasX, canvasY) {
+      const gx = Math.round((canvasX - margin) / cellSize);
+      const gy = Math.round((canvasY - margin) / cellSize);
+      if (gx >= 0 && gx < BOARD_SIZE && gy >= 0 && gy < BOARD_SIZE) {
+        const dist = Math.hypot(canvasX - (margin + gx * cellSize), canvasY - (margin + gy * cellSize));
+        if (dist <= cellSize * 0.55) {
+          return { x: gx, y: gy };
+        }
+      }
+      return null;
+    }
+
+    /* ==========================================================================
+       4. Renju Rule & Win Detection Logic
+       ========================================================================== */
+    const DIRECTIONS = [
+      [1, 0],  // Horizontal
+      [0, 1],  // Vertical
+      [1, 1],  // Diagonal \
+      [1, -1]  // Diagonal /
+    ];
+
+    function isValidPos(x, y) {
+      return x >= 0 && x < BOARD_SIZE && y >= 0 && y < BOARD_SIZE;
+    }
+
+    // Check consecutive count in a direction
+    function getLineConsecutive(x, y, dx, dy, stone, tempBoard = board) {
+      let count = 1;
+      let leftBlocked = false;
+      let rightBlocked = false;
+
+      let r = 1;
+      while (isValidPos(x + dx * r, y + dy * r) && tempBoard[y + dy * r][x + dx * r] === stone) {
+        count++;
+        r++;
+      }
+      if (!isValidPos(x + dx * r, y + dy * r) || (tempBoard[y + dy * r][x + dx * r] !== EMPTY)) {
+        rightBlocked = true;
+      }
+
+      let l = 1;
+      while (isValidPos(x - dx * l, y - dy * l) && tempBoard[y - dy * l][x - dx * l] === stone) {
+        count++;
+        l++;
+      }
+      if (!isValidPos(x - dx * l, y - dy * l) || (tempBoard[y - dy * l][x - dx * l] !== EMPTY)) {
+        leftBlocked = true;
+      }
+
+      return { count, leftBlocked, rightBlocked, lLength: l - 1, rLength: r - 1 };
+    }
+
+    // Check 5 in a row
+    function checkWin(x, y, stone, tempBoard = board) {
+      for (const [dx, dy] of DIRECTIONS) {
+        const line = getLineConsecutive(x, y, dx, dy, stone, tempBoard);
+        if (stone === BLACK) {
+          // In Renju, Black must have exactly 5. Overline is forbidden!
+          if (renjuToggle.checked) {
+            if (line.count === 5) return { win: true, dx, dy, x, y };
+          } else {
+            if (line.count >= 5) return { win: true, dx, dy, x, y };
+          }
+        } else {
+          // White wins on 5 or more (overline allowed for White in Renju)
+          if (line.count >= 5) return { win: true, dx, dy, x, y };
+        }
+      }
+      return null;
+    }
+
+    // Full Renju Rule Checker for Black
+    // Returns { forbidden: boolean, reason: string }
+    function checkForbidden(x, y, tempBoard = board) {
+      if (!renjuToggle.checked) return { forbidden: false };
+      if (tempBoard[y][x] !== EMPTY) return { forbidden: true, reason: 'Occupied' };
+
+      // Temporarily place black stone
+      tempBoard[y][x] = BLACK;
+
+      // 1. Check Overline (장목: 6목 이상)
+      let hasFive = false;
+      for (const [dx, dy] of DIRECTIONS) {
+        const line = getLineConsecutive(x, y, dx, dy, BLACK, tempBoard);
+        if (line.count > 5) {
+          tempBoard[y][x] = EMPTY;
+          return { forbidden: true, reason: '장목 (6목 이상 금수)' };
+        }
+        if (line.count === 5) {
+          hasFive = true;
+        }
+      }
+
+      // If already exactly 5, Black wins directly (no 3-3 or 4-4 can override a 5-win in standard Renju)
+      if (hasFive) {
+        tempBoard[y][x] = EMPTY;
+        return { forbidden: false, win: true };
+      }
+
+      // 2. Count Threes and Fours
+      let fourCount = 0;
+      let openThreeCount = 0;
+
+      for (const [dx, dy] of DIRECTIONS) {
+        const shape = evaluateLineShape(x, y, dx, dy, BLACK, tempBoard);
+        if (shape.isFour) fourCount += shape.fourCount;
+        if (shape.isOpenThree) openThreeCount += 1;
+      }
+
+      tempBoard[y][x] = EMPTY;
+
+      if (fourCount >= 2) {
+        return { forbidden: true, reason: '4·4 (사사) 금수' };
+      }
+      if (openThreeCount >= 2) {
+        return { forbidden: true, reason: '3·3 (삼삼) 금수' };
+      }
+
+      return { forbidden: false };
+    }
+
+    // Pattern analyzer for a single direction line through (x, y)
+    function evaluateLineShape(x, y, dx, dy, stone, tempBoard) {
+      let isFour = false;
+      let fourCount = 0;
+      let isOpenThree = false;
+
+      // Extract a window of 9 cells centered on (x, y) [-4 to +4]
+      const cells = [];
+      for (let i = -4; i <= 4; i++) {
+        const cx = x + dx * i;
+        const cy = y + dy * i;
+        if (!isValidPos(cx, cy)) {
+          cells.push(3 - stone); // Treat boundary as opponent stone
+        } else {
+          cells.push(tempBoard[cy][cx]);
+        }
+      }
+
+      // Check for Four: placing stone in any empty position creates a 5 without being forbidden
+      // We test creating 5 by placing an extra stone in the empty spots in this line
+      const opp = 3 - stone;
+      for (let i = 0; i <= 4; i++) {
+        const sub = cells.slice(i, i + 5); // 5-length window
+        const stoneCount = sub.filter(c => c === stone).length;
+        const emptyCount = sub.filter(c => c === EMPTY).length;
+        const oppCount = sub.filter(c => c === opp).length;
+
+        if (oppCount === 0 && stoneCount === 4 && emptyCount === 1) {
+          isFour = true;
+          fourCount++;
+        }
+      }
+      if (fourCount > 2) fourCount = 2;
+
+      // Open Three (활삼 / 열린 3)
+      // Standard open three patterns:
+      // 0 1 1 1 0 (continuous open 3)
+      // 0 1 0 1 1 0 (gapped open 3)
+      // 0 1 1 0 1 0 (gapped open 3)
+      const lineStr = cells.map(c => c === EMPTY ? '0' : (c === stone ? '1' : '2')).join('');
+      
+      const open3Patterns = [
+        '01110',
+        '010110',
+        '011010'
+      ];
+
+      for (const pat of open3Patterns) {
+        if (lineStr.includes(pat)) {
+          // Verify that turning this 3 into a 4 produces a non-forbidden open 4
+          isOpenThree = true;
+          break;
+        }
+      }
+
+      return { isFour, fourCount: isFour ? 1 : 0, isOpenThree };
+    }
+
+    /* ==========================================================================
+       5. Intelligent AI Engine (Minimax + Threat Heuristic)
+       ========================================================================== */
+    function getAvailableMoves(tempBoard = board) {
+      const moves = [];
+      const hasAnyStone = moveHistory.length > 0;
+
+      if (!hasAnyStone) {
+        return [{ x: 7, y: 7, score: 0 }];
+      }
+
+      // Collect candidate moves within distance 2 of existing stones
+      const visited = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(false));
+      for (let y = 0; y < BOARD_SIZE; y++) {
+        for (let x = 0; x < BOARD_SIZE; x++) {
+          if (tempBoard[y][x] !== EMPTY) {
+            for (let dy = -2; dy <= 2; dy++) {
+              for (let dx = -2; dx <= 2; dx++) {
+                const nx = x + dx;
+                const ny = y + dy;
+                if (isValidPos(nx, ny) && tempBoard[ny][nx] === EMPTY && !visited[ny][nx]) {
+                  visited[ny][nx] = true;
+                  moves.push({ x: nx, y: ny, score: 0 });
+                }
+              }
+            }
+          }
+        }
+      }
+      return moves;
+    }
+
+    function evaluatePositionScore(x, y, stone, tempBoard = board) {
+      let score = 0;
+      const opp = 3 - stone;
+
+      // Central position bonus
+      const distFromCenter = Math.abs(x - 7) + Math.abs(y - 7);
+      score += (14 - distFromCenter) * 3;
+
+      for (const [dx, dy] of DIRECTIONS) {
+        // Offense line
+        const off = getLineConsecutive(x, y, dx, dy, stone, tempBoard);
+        score += evaluateLineScore(off.count, off.leftBlocked, off.rightBlocked, stone === BLACK && renjuToggle.checked);
+
+        // Defense line (opponent threat at this position)
+        const def = getLineConsecutive(x, y, dx, dy, opp, tempBoard);
+        score += evaluateLineScore(def.count, def.leftBlocked, def.rightBlocked, opp === BLACK && renjuToggle.checked) * 0.9;
+      }
+      return score;
+    }
+
+    function evaluateLineScore(count, lBlocked, rBlocked, isRenjuBlack) {
+      if (isRenjuBlack && count > 5) return -50000; // Overline penalty for Black
+      if (count >= 5) return 100000; // 5 in a row (Win)
+
+      const blockedCount = (lBlocked ? 1 : 0) + (rBlocked ? 1 : 0);
+      if (blockedCount === 2) return 0; // Completely blocked
+
+      if (count === 4) {
+        if (blockedCount === 0) return 10000; // Open 4
+        if (blockedCount === 1) return 2500;  // Closed 4
+      } else if (count === 3) {
+        if (blockedCount === 0) return 1500;  // Open 3
+        if (blockedCount === 1) return 300;   // Closed 3
+      } else if (count === 2) {
+        if (blockedCount === 0) return 100;   // Open 2
+        if (blockedCount === 1) return 20;    // Closed 2
+      } else if (count === 1) {
+        return 5;
+      }
+      return 0;
+    }
+
+    function getBestMoveAI(aiStone) {
+      const difficulty = aiDifficultySelect.value;
+      const candidates = getAvailableMoves();
+      const opp = 3 - aiStone;
+
+      if (candidates.length === 0) return { x: 7, y: 7 };
+
+      // Filter out forbidden moves if AI is Black
+      const validCandidates = candidates.filter(m => {
+        if (aiStone === BLACK && renjuToggle.checked) {
+          const forb = checkForbidden(m.x, m.y);
+          return !forb.forbidden;
+        }
+        return true;
+      });
+
+      const moveList = validCandidates.length > 0 ? validCandidates : candidates;
+
+      // 1. Immediate Win Check for AI
+      for (const m of moveList) {
+        board[m.y][m.x] = aiStone;
+        const win = checkWin(m.x, m.y, aiStone);
+        board[m.y][m.x] = EMPTY;
+        if (win) return m;
+      }
+
+      // 2. Immediate Block Opponent Win (5-in-a-row threat)
+      for (const m of moveList) {
+        board[m.y][m.x] = opp;
+        const oppWin = checkWin(m.x, m.y, opp);
+        board[m.y][m.x] = EMPTY;
+        if (oppWin) {
+          // If we are black and this block is forbidden, check if allowed
+          return m;
+        }
+      }
+
+      // 3. Easy Mode: Add slight randomness
+      if (difficulty === 'easy') {
+        moveList.forEach(m => {
+          m.score = evaluatePositionScore(m.x, m.y, aiStone) + (Math.random() * 40 - 20);
+        });
+        moveList.sort((a, b) => b.score - a.score);
+        const topN = Math.min(3, moveList.length);
+        return moveList[Math.floor(Math.random() * topN)];
+      }
+
+      // 4. Medium Mode: Heuristic score ranking
+      if (difficulty === 'normal') {
+        moveList.forEach(m => {
+          board[m.y][m.x] = aiStone;
+          m.score = evaluatePositionScore(m.x, m.y, aiStone);
+          board[m.y][m.x] = EMPTY;
+        });
+        moveList.sort((a, b) => b.score - a.score);
+        return moveList[0];
+      }
+
+      // 5. Hard Mode: 2-Ply Alpha-Beta Search on Top Candidates
+      moveList.forEach(m => {
+        board[m.y][m.x] = aiStone;
+        m.score = evaluatePositionScore(m.x, m.y, aiStone);
+        board[m.y][m.x] = EMPTY;
+      });
+      moveList.sort((a, b) => b.score - a.score);
+
+      const topCandidates = moveList.slice(0, 8);
+      let bestScore = -Infinity;
+      let bestMove = topCandidates[0];
+
+      for (const move of topCandidates) {
+        board[move.y][move.x] = aiStone;
+        let score = minimax(1, false, -Infinity, Infinity, aiStone, opp);
+        board[move.y][move.x] = EMPTY;
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestMove = move;
+        }
+      }
+
+      return bestMove;
+    }
+
+    function minimax(depth, isMaximizing, alpha, beta, aiStone, oppStone) {
+      if (depth === 0) {
+        return evaluateBoardScore(aiStone);
+      }
+
+      const candidates = getAvailableMoves().slice(0, 6);
+
+      if (isMaximizing) {
+        let maxEval = -Infinity;
+        for (const m of candidates) {
+          board[m.y][m.x] = aiStone;
+          if (checkWin(m.x, m.y, aiStone)) {
+            board[m.y][m.x] = EMPTY;
+            return 90000;
+          }
+          const evalScore = minimax(depth - 1, false, alpha, beta, aiStone, oppStone);
+          board[m.y][m.x] = EMPTY;
+          maxEval = Math.max(maxEval, evalScore);
+          alpha = Math.max(alpha, evalScore);
+          if (beta <= alpha) break;
+        }
+        return maxEval;
+      } else {
+        let minEval = Infinity;
+        for (const m of candidates) {
+          board[m.y][m.x] = oppStone;
+          if (checkWin(m.x, m.y, oppStone)) {
+            board[m.y][m.x] = EMPTY;
+            return -90000;
+          }
+          const evalScore = minimax(depth - 1, true, alpha, beta, aiStone, oppStone);
+          board[m.y][m.x] = EMPTY;
+          minEval = Math.min(minEval, evalScore);
+          beta = Math.min(beta, evalScore);
+          if (beta <= alpha) break;
+        }
+        return minEval;
+      }
+    }
+
+    function evaluateBoardScore(stone) {
+      let total = 0;
+      const opp = 3 - stone;
+      for (const m of moveHistory) {
+        if (m.stone === stone) {
+          total += evaluatePositionScore(m.x, m.y, stone);
+        } else {
+          total -= evaluatePositionScore(m.x, m.y, opp);
+        }
+      }
+      return total;
+    }
+
+    /* ==========================================================================
+       6. Rendering Engine (Wood Board & Realistic Stones)
+       ========================================================================== */
+    function drawBoard() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // 1. Wood texture background
+      const woodGrad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+      woodGrad.addColorStop(0, '#e5be6b');
+      woodGrad.addColorStop(0.5, '#d4a84e');
+      woodGrad.addColorStop(1, '#c5973e');
+      ctx.fillStyle = woodGrad;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Subtle wood grain lines
+      ctx.strokeStyle = 'rgba(0, 0, 0, 0.035)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i < canvas.height; i += 4) {
+        ctx.beginPath();
+        ctx.moveTo(0, i);
+        ctx.lineTo(canvas.width, i);
+        ctx.stroke();
+      }
+
+      // 2. Grid lines
+      ctx.lineWidth = 1.2;
+      ctx.strokeStyle = '#4a2c08';
+
+      for (let i = 0; i < BOARD_SIZE; i++) {
+        // Horizontal line
+        const p1 = getCanvasCoords(0, i);
+        const p2 = getCanvasCoords(BOARD_SIZE - 1, i);
+        ctx.beginPath();
+        ctx.moveTo(p1.x, p1.y);
+        ctx.lineTo(p2.x, p2.y);
+        ctx.stroke();
+
+        // Vertical line
+        const p3 = getCanvasCoords(i, 0);
+        const p4 = getCanvasCoords(i, BOARD_SIZE - 1);
+        ctx.beginPath();
+        ctx.moveTo(p3.x, p3.y);
+        ctx.lineTo(p4.x, p4.y);
+        ctx.stroke();
+      }
+
+      // Outer border frame
+      const topLeft = getCanvasCoords(0, 0);
+      const botRight = getCanvasCoords(BOARD_SIZE - 1, BOARD_SIZE - 1);
+      ctx.lineWidth = 2.2;
+      ctx.strokeRect(topLeft.x, topLeft.y, botRight.x - topLeft.x, botRight.y - topLeft.y);
+
+      // 3. Star points (Hoshi / 화점: 5 spots for 15x15)
+      const starPoints = [
+        { x: 3, y: 3 }, { x: 11, y: 3 },
+        { x: 7, y: 7 },
+        { x: 3, y: 11 }, { x: 11, y: 11 }
+      ];
+      ctx.fillStyle = '#4a2c08';
+      for (const sp of starPoints) {
+        const pt = getCanvasCoords(sp.x, sp.y);
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, cellSize * 0.1, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // 4. Placed Stones
+      for (let i = 0; i < moveHistory.length; i++) {
+        const move = moveHistory[i];
+        const isLast = (i === moveHistory.length - 1);
+        drawStone(move.x, move.y, move.stone, isLast, i + 1);
+      }
+
+      // 5. Winning Stones Highlight Glow
+      if (winningStones.length > 0) {
+        ctx.save();
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 4;
+        ctx.shadowColor = '#ff3333';
+        ctx.shadowBlur = 12;
+        for (const ws of winningStones) {
+          const pt = getCanvasCoords(ws.x, ws.y);
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, cellSize * 0.44, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      // 6. AI Hint Indicator
+      if (hintPos && !isGameOver) {
+        const pt = getCanvasCoords(hintPos.x, hintPos.y);
+        ctx.save();
+        ctx.strokeStyle = '#10b981';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, cellSize * 0.42, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = '#10b981';
+        ctx.font = `bold ${Math.round(cellSize * 0.35)}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('💡', pt.x, pt.y);
+        ctx.restore();
+      }
+
+      // 7. Hover Preview Ghost Stone
+      if (hoverPos && !isGameOver && !isAiThinking && board[hoverPos.y][hoverPos.x] === EMPTY) {
+        const forb = (currentTurn === BLACK && renjuToggle.checked) ? checkForbidden(hoverPos.x, hoverPos.y) : { forbidden: false };
+        const pt = getCanvasCoords(hoverPos.x, hoverPos.y);
+
+        if (forb.forbidden) {
+          // Forbidden Spot: Draw Red 'X'
+          ctx.save();
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 3.5;
+          const sz = cellSize * 0.28;
+          ctx.beginPath();
+          ctx.moveTo(pt.x - sz, pt.y - sz);
+          ctx.lineTo(pt.x + sz, pt.y + sz);
+          ctx.moveTo(pt.x + sz, pt.y - sz);
+          ctx.lineTo(pt.x - sz, pt.y + sz);
+          ctx.stroke();
+
+          // Tooltip tag
+          ctx.fillStyle = 'rgba(239, 68, 68, 0.9)';
+          ctx.font = 'bold 11px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText(forb.reason, pt.x, pt.y - cellSize * 0.4);
+          ctx.restore();
+        } else {
+          // Valid Spot: Ghost stone
+          ctx.save();
+          ctx.globalAlpha = 0.45;
+          drawStone(hoverPos.x, hoverPos.y, currentTurn, false, null);
+          ctx.restore();
+        }
+      }
+    }
+
+    function drawStone(gridX, gridY, stone, isLast, moveNum) {
+      const pt = getCanvasCoords(gridX, gridY);
+      const radius = cellSize * 0.43;
+
+      ctx.save();
+      // Drop shadow
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.45)';
+      ctx.shadowBlur = 6;
+      ctx.shadowOffsetX = 2.5;
+      ctx.shadowOffsetY = 3.5;
+
+      const grad = ctx.createRadialGradient(
+        pt.x - radius * 0.3, pt.y - radius * 0.3, radius * 0.1,
+        pt.x, pt.y, radius
+      );
+
+      if (stone === BLACK) {
+        grad.addColorStop(0, '#555555');
+        grad.addColorStop(0.6, '#181818');
+        grad.addColorStop(1, '#050505');
+      } else {
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.7, '#e3e3e3');
+        grad.addColorStop(1, '#a8a8a8');
+      }
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Stone border
+      ctx.strokeStyle = stone === BLACK ? '#111' : '#b0b0b0';
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+
+      ctx.restore(); // restore shadow
+
+      // Last move marker (Red or Blue dot)
+      if (isLast) {
+        ctx.fillStyle = stone === BLACK ? '#ef4444' : '#2563eb';
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, radius * 0.22, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      // Move number display
+      if (showNumbersToggle.checked && moveNum !== null) {
+        ctx.fillStyle = stone === BLACK ? '#ffffff' : '#111111';
+        ctx.font = `bold ${Math.max(10, Math.round(cellSize * 0.34))}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(moveNum.toString(), pt.x, pt.y + (isLast ? -radius * 0.35 : 0));
+      }
+    }
+
+    /* ==========================================================================
+       7. Game Actions & Turn Management
+       ========================================================================== */
+    function makeMove(x, y) {
+      if (isGameOver || isAiThinking) return false;
+      if (board[y][x] !== EMPTY) return false;
+
+      // Renju rule check for Black
+      if (currentTurn === BLACK && renjuToggle.checked) {
+        const forb = checkForbidden(x, y);
+        if (forb.forbidden) {
+          showStatusTip(`⛔ [금수 착수 불가] ${forb.reason}`);
+          return false;
+        }
+      }
+
+      // Place Stone
+      board[y][x] = currentTurn;
+      moveHistory.push({ x, y, stone: currentTurn });
+      hintPos = null; // Clear hint
+
+      playStoneSound();
+
+      // Check Win
+      const winResult = checkWin(x, y, currentTurn);
+      if (winResult) {
+        handleGameOver(currentTurn, winResult);
+        drawBoard();
+        return true;
+      }
+
+      // Check Draw (Board full)
+      if (moveHistory.length === BOARD_SIZE * BOARD_SIZE) {
+        handleGameOver(EMPTY, null);
+        drawBoard();
+        return true;
+      }
+
+      // Toggle Turn
+      currentTurn = (currentTurn === BLACK) ? WHITE : BLACK;
+      updateUI();
+      drawBoard();
+
+      // Trigger AI move if applicable
+      triggerAIMoveIfNeeded();
+      return true;
+    }
+
+    function triggerAIMoveIfNeeded() {
+      const mode = gameModeSelect.value;
+      const isAI = (mode === 'pve-black' && currentTurn === WHITE) ||
+                   (mode === 'pve-white' && currentTurn === BLACK);
+
+      if (isAI && !isGameOver) {
+        isAiThinking = true;
+        updateUI();
+
+        // Slight realistic delay for natural feeling
+        setTimeout(() => {
+          const best = getBestMoveAI(currentTurn);
+          isAiThinking = false;
+          if (best) {
+            makeMove(best.x, best.y);
+          }
+        }, 300);
+      }
+    }
+
+    function handleGameOver(winnerStone, winResult) {
+      isGameOver = true;
+      playWinSound();
+
+      if (winResult) {
+        // Collect 5 winning stones for highlight
+        winningStones = [];
+        const { x, y, dx, dy } = winResult;
+        for (let i = -4; i <= 4; i++) {
+          const nx = x + dx * i;
+          const ny = y + dy * i;
+          if (isValidPos(nx, ny) && board[ny][nx] === winnerStone) {
+            winningStones.push({ x: nx, y: ny });
+          }
+        }
+      }
+
+      const winnerName = (winnerStone === BLACK) ? '흑돌' : (winnerStone === WHITE ? '백돌' : '무승부');
+      modalWinnerTitle.textContent = (winnerStone === EMPTY) ? '무승부! 🤝' : `${winnerName} 승리! 🎉`;
+      modalWinnerDesc.textContent = (winnerStone === EMPTY)
+        ? '바둑판이 꽉 차 무승부로 끝났습니다.'
+        : `${winnerName}이 5목을 먼저 완성하여 대결에서 승리하였습니다. (총 ${moveHistory.length}수)`;
+
+      setTimeout(() => {
+        gameOverModal.style.display = 'flex';
+      }, 500);
+
+      updateUI();
+    }
+
+    function undoMove() {
+      if (moveHistory.length === 0 || isGameOver || isAiThinking) return;
+
+      const mode = gameModeSelect.value;
+      const isPvE = (mode === 'pve-black' || mode === 'pve-white');
+
+      // In PvE mode, undo two moves (AI + Player), unless only 1 move has been made
+      let undos = 1;
+      if (isPvE && moveHistory.length >= 2) {
+        undos = 2;
+      }
+
+      for (let i = 0; i < undos; i++) {
+        if (moveHistory.length > 0) {
+          const last = moveHistory.pop();
+          board[last.y][last.x] = EMPTY;
+        }
+      }
+
+      currentTurn = (moveHistory.length % 2 === 0) ? BLACK : WHITE;
+      winningStones = [];
+      hintPos = null;
+      updateUI();
+      drawBoard();
+
+      // If in PvE and AI should move first (pve-white with empty board), trigger AI
+      triggerAIMoveIfNeeded();
+    }
+
+    function showHint() {
+      if (isGameOver || isAiThinking) return;
+      hintPos = getBestMoveAI(currentTurn);
+      drawBoard();
+    }
+
+    function resetGame() {
+      board = Array.from({ length: BOARD_SIZE }, () => Array(BOARD_SIZE).fill(EMPTY));
+      moveHistory = [];
+      currentTurn = BLACK;
+      isGameOver = false;
+      isAiThinking = false;
+      winningStones = [];
+      hoverPos = null;
+      hintPos = null;
+      gameOverModal.style.display = 'none';
+
+      updateUI();
+      drawBoard();
+
+      // If AI is Black (User is White), trigger AI first move
+      triggerAIMoveIfNeeded();
+    }
+
+    function updateUI() {
+      // Turn indicator
+      turnIndicator.className = `stone-indicator stone-${currentTurn === BLACK ? 'black' : 'white'}`;
+      
+      if (isGameOver) {
+        turnText.textContent = '대국 종료';
+      } else if (isAiThinking) {
+        turnText.textContent = 'AI 수읽기 중... 🤔';
+      } else {
+        const mode = gameModeSelect.value;
+        const isUserTurn = (mode === 'pvp') ||
+          (mode === 'pve-black' && currentTurn === BLACK) ||
+          (mode === 'pve-white' && currentTurn === WHITE);
+
+        turnText.textContent = `${currentTurn === BLACK ? '흑돌' : '백돌'} 차례 ${isUserTurn ? '(당신)' : '(AI)'}`;
+      }
+
+      moveCountText.textContent = `${moveHistory.length}수`;
+      undoBtn.disabled = (moveHistory.length === 0 || isGameOver || isAiThinking);
+      hintBtn.disabled = (isGameOver || isAiThinking);
+
+      // Show/hide difficulty based on mode
+      difficultyGroup.style.display = (gameModeSelect.value === 'pvp') ? 'none' : 'flex';
+    }
+
+    function showStatusTip(msg) {
+      ruleTip.innerHTML = `⚠️ <strong>안내:</strong> ${msg}`;
+      setTimeout(() => {
+        ruleTip.innerHTML = renjuToggle.checked
+          ? '💡 <strong>렌주룰 활성화:</strong> 흑은 3·3, 4·4, 장목(6목 이상)이 금지되며 오직 정확히 5목이어야 승리합니다. 백은 아무 제약이 없습니다.'
+          : '💡 <strong>일반룰 활성화:</strong> 금수 제약 없이 먼저 5목 이상을 만들면 승리합니다.';
+      }, 3500);
+    }
+
+    /* ==========================================================================
+       8. Event Listeners & Interaction
+       ========================================================================== */
+    canvas.addEventListener('mousemove', (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const cx = (e.clientX - rect.left) * scaleX;
+      const cy = (e.clientY - rect.top) * scaleY;
+
+      const grid = getGridCoords(cx, cy);
+      if (!hoverPos || !grid || hoverPos.x !== grid.x || hoverPos.y !== grid.y) {
+        hoverPos = grid;
+        drawBoard();
+      }
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+      hoverPos = null;
+      drawBoard();
+    });
+
+    canvas.addEventListener('click', (e) => {
+      getAudioContext(); // Enable AudioContext on first interaction
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const cx = (e.clientX - rect.left) * scaleX;
+      const cy = (e.clientY - rect.top) * scaleY;
+
+      const grid = getGridCoords(cx, cy);
+      if (grid) {
+        makeMove(grid.x, grid.y);
+      }
+    });
+
+    // Controls
+    gameModeSelect.addEventListener('change', resetGame);
+    aiDifficultySelect.addEventListener('change', () => {
+      if (hintPos) showHint();
+    });
+    renjuToggle.addEventListener('change', () => {
+      ruleTip.innerHTML = renjuToggle.checked
+        ? '💡 <strong>렌주룰 활성화:</strong> 흑은 3·3, 4·4, 장목(6목 이상)이 금지되며 오직 정확히 5목이어야 승리합니다. 백은 아무 제약이 없습니다.'
+        : '💡 <strong>일반룰 활성화:</strong> 금수 제약 없이 먼저 5목 이상을 만들면 승리합니다.';
+      drawBoard();
+    });
+    showNumbersToggle.addEventListener('change', drawBoard);
+    undoBtn.addEventListener('click', undoMove);
+    hintBtn.addEventListener('click', showHint);
+    restartBtn.addEventListener('click', resetGame);
+    modalRestartBtn.addEventListener('click', resetGame);
+
+    window.addEventListener('resize', resizeCanvas);
+
+    // Initial Start
+    resizeCanvas();
+    resetGame();
+  </script>
+</body>
+</html>
